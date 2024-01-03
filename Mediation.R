@@ -93,6 +93,7 @@ log_msg("Kinship matrix and genoprobs subsetted.")
 pheno$Diet <- as.factor(pheno$Diet)
 pheno$GenLit <- as.factor(pheno$GenLit)
 pheno$Sex <- as.factor(pheno$Sex)
+
 base_covar <- model.matrix(~Sex * Diet + GenLit, data = pheno)[, -1]
 interactive_covar <- t(t(model.matrix(~Diet, data = pheno)[, -1]))
 log_msg("Covariates reclassified.")
@@ -106,7 +107,7 @@ log_msg("QTL scan for trait alone completed.")
 qtl_no_additive[qtl_no_additive == 0] <- 1e-6 # Avoid division by zero
 log_msg("LOD profile for trait without a transcript as an additive covar completed.")
 
-peaks <- find_peaks(scan1_output = qtl_no_additive, map = map, threshold = 9)
+peaks <- find_peaks(scan1_output = qtl_no_additive, map = map, threshold = threshold)
 log_msg("Peaks found.")
 
 #Check to make sure there is only one peak
@@ -120,13 +121,19 @@ if (nrow(peaks) > 1) {
 
 #Get the peak position
 peak_position <- peaks$pos
-#Get the highest LOD score
+# Get the highest LOD score
 peak_lod <- peaks$lod
+
+log_msg("Peak position:", peak_position)
+log_msg("Peak LOD score:", peak_lod)
 
 #Set x_limit to the peak position +/- 10 Mb
 x_limit <- c(peak_position - 10, peak_position + 10)
-#Set y_limit to 0 to the highest LOD score + 30%
+# Set y_limit to 0 to the highest LOD score + 30%
 y_limit <- c(0, peak_lod * 1.3)
+
+log_msg("X_limit:", x_limit)
+log_msg("Y_limit:", y_limit)
 
 # Plot and save to PNG
 if (generate_plots) {
@@ -168,8 +175,10 @@ analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_
 log_msg("Setting up cluster and exporting functions.")
 # --- Set up Cluster ---
 cl <- makeCluster(numCores)
-clusterExport(cl, c("pheno", "gp", "K_chr", "base_covar", "interactive_covar", "rankz", "map", "find_peaks", "scan1",
- "analyze_gene", "trait_name", "qtl_no_additive", "generate_plots", "plot_scan1", "folder", "x_limit", "y_limit", "chromosome"))
+clusterExport(cl, c(
+  "pheno", "gp", "K_chr", "base_covar", "interactive_covar", "rankz", "map", "find_peaks", "scan1",
+  "analyze_gene", "trait_name", "qtl_no_additive", "generate_plots", "plot_scan1", "folder", "x_limit", "y_limit", "chromosome",
+  "threshold", "percent"))
 log_msg("Cluster set up and functions exported.")
 
 # --- Parallel Loop for Gene Analysis ---
