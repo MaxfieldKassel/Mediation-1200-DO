@@ -11,7 +11,7 @@ library(qtl2convert)
 library(parallel)
 library(data.table)
 
-mode <- "physiological" # Set to "physiological" or "expression" to change logging mode
+mode <- "expression" # Set to "physiological" or "expression" to change logging mode
 # if expression use the csv file to get the trait data
 csv_filename <- "20230627_DOplasmalipids.csv"
 trait_name <- "TC" #Apobec3 
