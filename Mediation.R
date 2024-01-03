@@ -1,66 +1,26 @@
 # Load data table library
-library(data.table)
 source("logging.R")
+source("utils.R")
+source("isoforms.R")
+# --- Libraries ---
+library(gplots)
+library(ggplot2)
+library(RColorBrewer)
+library(qtl2)
+library(qtl2convert)
+library(parallel)
+library(data.table)
 
-
-folder <- "ResultsFolder"
-add_timestamp <- TRUE # Set to TRUE to add a timestamp, or FALSE to exclude it
-
-# --- Create Folder ---
-if (add_timestamp) {
-  timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
-  folder <- paste0(folder, "_", timestamp)
-}
-if (!dir.exists(folder)) {
-  dir.create(folder)
-}
-
-set_log_file(folder)
-log("Folder for results created:", folder)
-
-# Read in the CSV file
-csv <- read.csv(file = "20230627_DOplasmalipids.csv")
-
-# Check to make sure "mouse, GenLit, Sex, DietName" are in the CSV file as column names
-required_columns <- c("mouse", "GenLit", "Sex", "DietName")
-missing_columns <- setdiff(required_columns, colnames(csv))
-
-if (length(missing_columns) > 0) {
-  log("The following required columns are missing:", paste(missing_columns, collapse = ", "))
-  #Exit
-  q()
-} else {
-  log("All required columns are present.")
-}
-
-#Get other columns from csv
-other_columns <- setdiff(colnames(csv), required_columns)
-#Prompt user for column to use as trait
-trait_name <- readline(prompt = paste("Enter the column name to use as the trait (", paste(other_columns, collapse = ", "), "): "))
-#Check to make sure the trait column is in the CSV file
-if (!trait_name %in% colnames(csv)) {
-  log("The trait column", trait_name, "is not in the CSV file.")
-  #Exit
-  q()
-} else {
-  log("The trait column is present.")
-}
-
-#Remove all other columns from csv (except for required, selected and "Batch" if present)
-batch_present <- "Batch" %in% colnames(csv)
-if (batch_present) {
-  csv <- csv[, c(required_columns, "Batch", trait_name)]
-} else {
-  csv <- csv[, c(required_columns, trait_name)]
-}
-
-csv <- as.data.table(csv)
-log("The following columns will be used:")
-log(colnames(csv))
-#print header
-
-
-
+mode <- "physiological" # Set to "physiological" or "expression" to change logging mode
+# if expression use the csv file to get the trait data
+csv_filename <- "20230627_DOplasmalipids.csv"
+trait_name <- "TC" #Apobec3 
+chromosome <- "5"
+position <- 125000000 # Position in base pairs
+flanking <- 2000000 # Flanking region in base pairs
+minexp <- 100 # Minimum non-zero expression value for isoforms
+percent <- 0.3 #Percent LOD change to plot graph
+threshold <- 20 # Threshold for LOD score
 
 # Define a function to rank data
 rankz = function(x) {
@@ -68,124 +28,66 @@ rankz = function(x) {
   return(qnorm(x))
 }
 
-# Set parameters
-chromosome <- "5"
-position <- 125000000
-flanking <- 2000000
-minexp <- 100
-percent <- 0.5
-
-# Load isoforms data
-Isoforms <- fread("vsd_DO_isoforms_new_app.csv")
-
-# Extract the isoforms for each region based on user input (chromosome, position, flanking region)
-# Filter: If the chromosome matches and the position is within the flanking region, keep the row
-isoforms1 <- Isoforms[chromosome_name == chromosome & transcript_start >= position - flanking & transcript_end <= position + flanking]
-
-# Clean up by removing the original isoforms object
-rm(Isoforms)
-
-# Extract columns starting with 'DO'
-DO_cols_logical <- grepl("^DO", names(isoforms1))
-DO_columns <- isoforms1[, ..DO_cols_logical]
-
-# Identify the smallest number in columns starting with 'DO'
-if (ncol(DO_columns) > 0) {
-  smallest <- min(apply(DO_columns, 2, min, na.rm = TRUE), na.rm = TRUE)
-} else {
-  smallest <- NA # Placeholder for no 'DO' columns
-}
-
-# Filter isoforms based on minimum non-zero expression value
-isoforms1 <- isoforms1[which(rowSums(DO_columns > smallest, na.rm = TRUE) >= minexp),]
-
-# Create a new column 'unique_name' combining 'X' and 'external_gene_name'
-unique_name <- paste(isoforms1$X, isoforms1$external_gene_name, sep = ".")
-
-# Remove all non-DO columns
-DO_column_names <- names(isoforms1)[DO_cols_logical]
-isoforms1 <- isoforms1[, ..DO_column_names]
-
-#Copy the header to a new object
-header <- names(isoforms1)
-
-# Transpose data and convert to a data frame
-isoforms1 <- as.data.frame(t(isoforms1))
-
-# Set 'unique_name' as the header
-colnames(isoforms1) <- unique_name
-
-# Add 'Mouse' column and reorganize data
-isoforms1$mouse <- header
-isoforms1 <- isoforms1[, c(ncol(isoforms1), 1:(ncol(isoforms1) - 1))]
-
-# Sort data by the 'Mouse' column
-isoforms1 <- isoforms1[order(isoforms1$mouse),]
-
-# Write the transformed data to a CSV file
-fwrite(isoforms1, file = "isoforms1.csv")
-
-mouse <- unique(isoforms1$mouse)
-mouse <- mouse[!is.na(mouse)]
-mouse <- mouse[!mouse %in% csv$mouse]
-if (length(mouse) > 0) {
-  log("The following mouse are not in the CSV file:", paste(mouse, collapse = ", "))
-  isoforms1 <- isoforms1[!isoforms1$mouse %in% mouse,]
-}
-mouse <- unique(csv$mouse)
-mouse <- mouse[!is.na(mouse)]
-mouse <- mouse[!mouse %in% isoforms1$mouse]
-if (length(mouse) > 0) {
-  log("The following mouse are not in the isoforms1 file:", paste(mouse, collapse = ", "))
-  csv <- csv[!csv$mouse %in% mouse,]
-}
-#Combine csv and isoforms1 by mouse
-combined <- merge(csv, isoforms1, by = "mouse")
-
-#Save combined as csv
-fwrite(combined, file = "combined.csv")
-
-
-
-
-
-# --- Libraries ---
-library(gplots)
-library(ggplot2)
-library(readxl)
-library(RColorBrewer)
-library(qtl2)
-library(qtl2convert)
-library(parallel)
-
-# --- Configuration Variables ---
-filename <- "combined.csv"
-
-generate_plots <- TRUE
-x_limit <- c(0, 120)
-y_limit <- c(0, 13)
-
-
-
 numCores <- detectCores() - 1 # Keeping one core free for other processes
 
+
+# Non-interactive parameters
+folder <- "Results"
+add_timestamp <- TRUE # Set to TRUE to add a timestamp, or FALSE to exclude it
+isoforms_filename <- "vsd_DO_isoforms_new_app.csv"
+generate_plots <- TRUE #TODO: Remove this
+
+# Create folder and set log file
+folder <- create_folder(folder, add_timestamp)
+set_log_file(folder)
+log_msg("Folder for results created:", folder)
+if (mode == "expression") {
+  # Read in the CSV file
+  csv <- load_csv(csv_filename)
+  # Check the CSV file for required columns, stop if any are missing
+  check_isoforms(csv, trait_name)
+  # Remove unused columns
+  csv <- remove_unused_columns(csv, trait_name)
+
+  # Load isoform data
+  isoforms <- load_csv(isoforms_filename)
+  # Filter isoforms based on chromosome, position, and minexp
+  isoforms <- filter_isoforms(isoforms, chromosome, position, flanking, minexp)
+  # Format isoforms for merging
+  isoforms <- format_isoforms(isoforms)
+  # Merge isoforms with CSV file
+  isoforms <- combine_files(csv, isoforms)
+} else {
+  # Load isoform data
+  isoforms <- load_csv(isoforms_filename)
+  # Filter isoforms for those containing the trait
+  isoforms <- filter_isoforms_for_trait(isoforms, trait_name)
+}
+
 # --- Load Data ---
+log_msg("Loading genoprobs...")
 genoprobs <- readRDS("final_genoprobs_1176.rds")
+log_msg("Loading map...")
 map <- readRDS("gigamuga_map_test_v2.RDS")
+log_msg("Loading kinship matrix...")
 K <- readRDS("K_1176_DietDO.rds")
-pheno <- as.data.frame(combined)
+log_msg("Loading isoforms...")
+pheno <- as.data.frame(isoforms)
 colnames(pheno)[1] <- "mouse"
 rownames(pheno) <- pheno$mouse
-log("Data loaded.")
+log_msg("All data loaded.")
 
 
 # --- Get Gene Names ---
-gene_names <- unique_name
+#get it from the isoforms header - the first x columns are not genes after the trait
+trait_index <- which(colnames(pheno) == trait_name)
+gene_names <- colnames(pheno)[(trait_index + 1):ncol(pheno)]
+log_msg("Gene names extracted.")
 
 # --- Make a kinship matrix and subset for the specified chromosome ---
 K_chr <- K[[chromosome]]
 gp <- genoprobs[, chromosome]
-log("Kinship matrix and genoprobs subsetted.")
+log_msg("Kinship matrix and genoprobs subsetted.")
 
 # --- Reclassify covars ---
 pheno$Diet <- as.factor(pheno$Diet)
@@ -193,13 +95,38 @@ pheno$GenLit <- as.factor(pheno$GenLit)
 pheno$Sex <- as.factor(pheno$Sex)
 base_covar <- model.matrix(~Sex * Diet + GenLit, data = pheno)[, -1]
 interactive_covar <- t(t(model.matrix(~Diet, data = pheno)[, -1]))
-log("Covariates reclassified.")
+log_msg("Covariates reclassified.")
 
 
 #------ check LOD profile for trait without a transcript as an additive covar -----------
 pheno[[paste0("rankz.", trait_name)]] <- rankz(pheno[[trait_name]])
 qtl_no_additive <- scan1(genoprobs = gp, pheno = pheno[, paste0("rankz.", trait_name), drop = FALSE], kinship = K_chr, addcovar = base_covar, intcovar = interactive_covar)
-log("QTL scan for trait alone completed.")
+log_msg("QTL scan for trait alone completed.")
+
+qtl_no_additive[qtl_no_additive == 0] <- 1e-6 # Avoid division by zero
+log_msg("LOD profile for trait without a transcript as an additive covar completed.")
+
+peaks <- find_peaks(scan1_output = qtl_no_additive, map = map, threshold = 9)
+log_msg("Peaks found.")
+
+#Check to make sure there is only one peak
+if (nrow(peaks) > 1) {
+  log_msg("There is more than one peak.")
+  #Exit
+  q()
+} else {
+  log_msg("There is only one peak.")
+}
+
+#Get the peak position
+peak_position <- peaks$pos
+#Get the highest LOD score
+peak_lod <- peaks$lod
+
+#Set x_limit to the peak position +/- 10 Mb
+x_limit <- c(peak_position - 10, peak_position + 10)
+#Set y_limit to 0 to the highest LOD score + 30%
+y_limit <- c(0, peak_lod * 1.3)
 
 # Plot and save to PNG
 if (generate_plots) {
@@ -208,12 +135,9 @@ if (generate_plots) {
   plot_scan1(x = qtl_no_additive, xlim = x_limit, ylim = y_limit, map = map, main = "QTL for trait alone")
   dev.off()
 }
-qtl_no_additive[qtl_no_additive == 0] <- 1e-6 # Avoid division by zero
-log("LOD profile for trait without a transcript as an additive covar completed.")
 
 # --- Function to calculate LOD difference and perform original QTL analysis ---
-analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_covar, map, qtl_no_additive) {
-  log("Gene", gene, "started.")
+analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_covar, map, qtl_no_additive, initial_lod = NA) {
   # Transform data
   pheno[[paste0("rankz.", gene)]] <- rankz(pheno[[gene]])
 
@@ -221,73 +145,52 @@ analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_
   addcovar_with_gene <- model.matrix(~Sex * Diet + GenLit + pheno[[paste0("rankz.", gene)]], data = pheno)[, -1]
   qtl_with_additive <- scan1(genoprobs = genoprobs, pheno = pheno[, trait_name, drop = FALSE], kinship = K_chr, addcovar = addcovar_with_gene, intcovar = interactive_covar, cores = 0)
 
-  # Calculate percent change in LOD scores and handle division by zero
-  lod_diff <- qtl_with_additive - qtl_no_additive
-  percent_change_lod <- lod_diff / qtl_no_additive * 100
-
-  # Find the index and value of the maximum percent change
-  max_index <- which(abs(percent_change_lod) == max(abs(percent_change_lod), na.rm = TRUE))
-  max_percent_change <- percent_change_lod[max_index]
-
-  # Extract chromosome-specific positions from map
-  chromosome_positions <- map[[chromosome]]
-
-  # Validate max_index and extract max_change_position
-  if (length(max_index) > 0 && max_index <= length(chromosome_positions)) {
-    max_change_position <- chromosome_positions[max_index]
-  } else {
-    max_change_position <- NA # Assign NA if max_index is not valid
-  }
-
   # Find peaks for the additive model
-  peaks <- find_peaks(scan1_output = qtl_with_additive, map = map, threshold = 9)
+  peaks <- find_peaks(scan1_output = qtl_with_additive, map = map, threshold = threshold)
 
-  # Plot and save to PNG
-  if (generate_plots) {
+  # Plot and save to PNG if the LOD score has changed by more than the specified percent
+  if (!is.null(initial_lod) && abs(max(peaks$lod) - initial_lod) / initial_lod > percent) {
     png_filename <- paste0(folder, "/", gene, ".png")
     png(png_filename)
     plot_scan1(x = qtl_with_additive, xlim = x_limit, ylim = y_limit, map = map, main = paste("QTL Scan for ", trait_name, " + ", gene))
     dev.off()
   }
 
-  # Add gene name, max percent change, and its location to peak results
+  # Add gene name
   peaks$gene <- gene
-  peaks$max_percent_change <- max_percent_change
-  peaks$max_change_position <- max_change_position
-  log("Gene", gene, "completed.")
+
+  #if there is a percent change in the LOD score, return the percent change
+  if (!is.null(initial_lod)) {
+    peaks$percent_change <- abs(max(peaks$lod) - initial_lod) / initial_lod
+  }
   return(peaks)
 }
-log("Setting up cluster and exporting functions.")
+log_msg("Setting up cluster and exporting functions.")
 # --- Set up Cluster ---
 cl <- makeCluster(numCores)
-clusterEvalQ(cl, {
-  source("logging.R") # Adjust the path as necessary
-})
 clusterExport(cl, c("pheno", "gp", "K_chr", "base_covar", "interactive_covar", "rankz", "map", "find_peaks", "scan1",
- "analyze_gene", "trait_name", "qtl_no_additive", "generate_plots", "plot_scan1", "folder", "x_limit", "y_limit", "chromosome",
- "log", "logging_env"))
-log("Cluster set up and functions exported.")
+ "analyze_gene", "trait_name", "qtl_no_additive", "generate_plots", "plot_scan1", "folder", "x_limit", "y_limit", "chromosome"))
+log_msg("Cluster set up and functions exported.")
 
 # --- Parallel Loop for Gene Analysis ---
 analysis_results <- parLapply(cl, gene_names, function(gene) {
-  analyze_gene(gene, gp, pheno, K_chr, base_covar, interactive_covar, map, qtl_no_additive)
+  analyze_gene(gene, gp, pheno, K_chr, base_covar, interactive_covar, map, qtl_no_additive, initial_lod = peak_lod)
 })
 
 # --- Close Cluster ---
 stopCluster(cl)
-log("Cluster closed.")
+log_msg("Cluster closed.")
 
 # --- Aggregate Results ---
 analysis_df <- do.call(rbind, analysis_results)
-log("Results aggregated.")
+log_msg("Results aggregated.")
+
+# --- Add initial LOD score to analysis_results at the top ---
+analysis_df <- rbind(data.frame(gene = trait_name, pos = peak_position, lod = peak_lod, percent_change = 0), analysis_df)
+log_msg("Initial LOD score added.")
 
 # --- Remove max_diff and max_diff_loc from analysis_results before saving ---
-analysis_df_no_max_change <- analysis_df[, !(names(analysis_df) %in% c("max_percent_change", "max_change_position"))]
-write.csv(analysis_df_no_max_change, file.path(folder, paste0(trait_name, "_analysis_results.csv")), row.names = FALSE)
-log("Results saved.")
+write.csv(analysis_df, file.path(folder, paste0(trait_name, "_analysis_results.csv")), row.names = FALSE)
+log_msg("Results saved.")
 
-# --- Extract and Save LOD Difference Results with Percent Change ---
-lod_change_df <- analysis_df[, c("gene", "max_percent_change", "max_change_position")]
-lod_change_df <- lod_change_df[order(-lod_change_df$max_percent_change),] # Sorting by largest percent change
-write.csv(lod_change_df, file.path(folder, paste0(trait_name, "_LOD_percent_changes.csv")), row.names = FALSE)
-log("LOD difference results saved.")
+log_msg("LOD difference results saved.")

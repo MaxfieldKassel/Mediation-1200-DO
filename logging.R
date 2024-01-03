@@ -1,18 +1,20 @@
+# Environment to hold logging settings and state
 logging_env <- new.env()
 logging_env$log_file <- NULL
-logging_env$mode <- "debug" # Example modes: "log", "debug", or "off"
-# debug = print all messages and save to log file
-# log = save all messages to log file
-# silent = do not print or save any messages
+logging_env$mode <- "debug" # Modes: "log", "debug", "off"
+# debug = print & save messages
+# log = save messages only
+# off = neither print nor save
 
-
-# --- Set log file --- 
+# --- Set log file path and initialize log file ---
 set_log_file <- function(folder = NULL) {
+  # Close existing log file if open
   if (!is.null(logging_env$log_file)) {
     close(logging_env$log_file)
     logging_env$log_file <- NULL
   }
 
+  # Determine log file path
   log_file_path <- if (!is.null(folder) && dir.exists(folder)) {
     paste0(folder, "/log.txt")
   } else {
@@ -20,31 +22,30 @@ set_log_file <- function(folder = NULL) {
   }
 
   logging_env$log_file_path <- log_file_path
-  log("Log file path set to: ", log_file_path)
 
+  # Open new log file for appending
   logging_env$log_file <- file(log_file_path, open = "a")
 }
 
-
-
-
-# --- Log function ---
-log <- function(..., collapse = " ", add_time = TRUE) {
+# --- Function to record log messages ---
+log_msg <- function(..., collapse = " ", add_time = TRUE) {
+  # Check if logging mode requires message recording
   if (logging_env$mode %in% c("log", "debug")) {
     args <- list(...)
     message <- paste(sapply(args, as.character), collapse = collapse)
 
-
-
+    # Print message in debug mode
     if (logging_env$mode == "debug") {
       cat(message, "\n")
     }
 
+    # Add timestamp if required to file message
     if (add_time) {
       timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
       message <- paste(timestamp, message)
     }
 
+    # Write message to log file if set
     if (!is.null(logging_env$log_file)) {
       writeLines(message, con = logging_env$log_file)
       flush(logging_env$log_file)
@@ -52,4 +53,26 @@ log <- function(..., collapse = " ", add_time = TRUE) {
       cat("Log file not set.\n")
     }
   }
+}
+
+# --- function to stop and print error message ---
+stop_msg <- function(..., collapse = " ", add_time = TRUE) {
+  args <- list(...)
+  message <- paste(sapply(args, as.character), collapse = collapse)
+
+  # Add timestamp if required to file message
+  if (add_time) {
+    timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+    message <- paste(timestamp, message)
+  }
+
+  # Write message to log file if set
+  if (!is.null(logging_env$log_file)) {
+    writeLines(message, con = logging_env$log_file)
+    flush(logging_env$log_file)
+  } else {
+    cat("Log file not set.\n")
+  }
+
+  stop(message)
 }
