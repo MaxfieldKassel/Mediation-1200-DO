@@ -37,13 +37,13 @@ remove_unused_columns <- function(csv, trait) {
   unused_columns <- setdiff(colnames(csv), c(required_columns, option_column, trait))
   log_msg("Removing unused columns:", paste(unused_columns, collapse = ", "))
   # Remove unused columns
-  csv <- csv[, c(required_columns, option_column, trait)]
+  csv <- csv[, c(required_columns, trait)]
   log_msg("Columns after removal:", paste(colnames(csv), collapse = ", "))
   return(csv)
 }
 
 # --- Filter isoforms ---
-filter_isoforms <- function(isoforms, chromosome, position, flank, minexp) {
+filter_isoforms <- function(isoforms, chromosome, position, flank, minexp, trait) {
   log_msg("Isoforms before filtering for position:", nrow(isoforms))
   # Filter isoforms based on chromosome, position, and flank
   #
@@ -126,7 +126,14 @@ combine_files <- function(csv, isoforms) {
     csv <- csv[!csv$mouse %in% mouse,]
   }
   log_msg("Columns after combining:", ncol(isoforms))
+  # if isoforms contains a column that csv does, remove it excluding mouse
+  # print the columns that were removed
+  if (any(colnames(isoforms) %in% colnames(csv))) {
+    log_msg("The following columns are in the isoforms file and the CSV file:", paste(colnames(isoforms)[colnames(isoforms) %in% colnames(csv)], collapse = ", "))
+    isoforms <- isoforms[, !(colnames(isoforms) %in% colnames(csv)) | colnames(isoforms) == "mouse"]
+    log_msg("Columns after removing:", ncol(isoforms))
+  }
+
   #Combine csv and isoforms by mouse
   return(merge(csv, isoforms, by = "mouse"))
 }
-

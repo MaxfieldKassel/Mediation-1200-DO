@@ -1,6 +1,6 @@
 # Environment to hold logging settings and state
 logging_env <- new.env()
-logging_env$log_file <- NULL
+logging_env$log_file_path <- NULL
 logging_env$mode <- "debug" # Modes: "log", "debug", "off"
 # debug = print & save messages
 # log = save messages only
@@ -24,7 +24,7 @@ set_log_file <- function(folder = NULL) {
   logging_env$log_file_path <- log_file_path
 
   # Open new log file for appending
-  logging_env$log_file <- file(log_file_path, open = "a")
+  
 }
 
 # --- Function to record log messages ---
@@ -46,11 +46,13 @@ log_msg <- function(..., collapse = " ", add_time = TRUE) {
     }
 
     # Write message to log file if set
-    if (!is.null(logging_env$log_file)) {
-      writeLines(message, con = logging_env$log_file)
-      flush(logging_env$log_file)
+    if (!is.null(logging_env$log_file_path)) {
+      log_file <- file(logging_env$log_file_path, open = "a")
+      writeLines(message, con = log_file)
+      flush(log_file)
+      close(log_file)
     } else {
-      cat("Log file not set.\n")
+      warning("Log file not set.\n")
     }
   }
 }
@@ -67,9 +69,11 @@ stop_msg <- function(..., collapse = " ", add_time = TRUE) {
   }
 
   # Write message to log file if set
-  if (!is.null(logging_env$log_file)) {
-    writeLines(message, con = logging_env$log_file)
-    flush(logging_env$log_file)
+  if (!is.null(logging_env$log_file_path)) {
+    log_file <- file(logging_env$log_file_path, open = "a")
+    writeLines(message, con = log_file)
+    flush(log_file)
+    close(log_file)
   } else {
     cat("Log file not set.\n")
   }
