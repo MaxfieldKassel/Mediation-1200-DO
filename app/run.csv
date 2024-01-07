@@ -1,0 +1,27 @@
+csv_filename,trait_name,chromosome,position,flanking,minexp,percent,threshold
+"GTT_glu_15_14wk as trait.xlsx","GTT_glu_15_14wk","4",60,5,100,30,9
+"GTT_glu_15_14wk as trait.xlsx","GTT_glu_15_14wk","7",30,3,100,30,9
+"log10_cpep_ins_molar_ratio_0_14wk as trait.xlsx","log10_cpep_ins_molar_ratio_0_14wk","1",188,4,100,30,9
+"log10_cpep_ins_molar_ratio_0_14wk as trait.xlsx","log10_cpep_ins_molar_ratio_0_14wk","2",168,4,100,30,9
+"glu_iAUC_14wk as trait.xlsx","glu_iAUC_14wk","4",61,5,100,30,9
+"glu_iAUC_14wk as trait.xlsx","glu_iAUC_14wk","8",46,6,100,30,9
+"glu_iAUC_14wk as trait.xlsx","glu_iAUC_14wk","16",23,6,100,30,9
+"GTT_glu_120_18wk as trait.xlsx","GTT_glu_120_18wk","11",114,4,100,30,9
+"GTT_glu_30_18wk as trait.xlsx","GTT_glu_30_18wk","12",74,6,100,30,9
+"GTT_glu_30_18wk as trait.xlsx","GTT_glu_30_18wk","11",75,5,100,30,9
+"GTT_glu_30_18wk as trait.xlsx","GTT_glu_30_18wk","8",46,6,100,30,9
+"BW_13wk as trait.xlsx","BW_13wk","4",115,10,100,30,9
+"log10_cpep_ins_molar_ratio_15_14wk as trait.xlsx","log10_cpep_ins_molar_ratio_15_14wk","11",84,5,100,30,9
+"GTT_glu_15_18wk as trait.xlsx","GTT_glu_15_18wk","11",75.5,4,100,30,9
+"GTT_glu_15_18wk as trait.xlsx","GTT_glu_15_18wk","15",5,5,100,30,9
+"GTT_glu_15_18wk as trait.xlsx","GTT_glu_15_18wk","19",31,3,100,30,9
+"BMI_17wk as trait.xlsx","BMI_17wk","5",147,6,100,30,9
+"fat_17wk as trait.xlsx","fat_17wk","9",114,5,100,30,9
+"GTT_glu_0_18wk as trait.xlsx","GTT_glu_0_18wk","X",132,6,100,30,9
+"percent_heart_wt_BW as trait.xlsx","percent_heart_wt_BW","2",144,6,100,30,9
+"percent_heart_wt_BW as trait.xlsx","percent_heart_wt_BW","7",112,6,100,30,9
+"GTT_ins_0_14wk as trait.xlsx","GTT_ins_0_14wk","11",85,5,100,30,9
+"NP_cholesterol as trait.xlsx","NP_cholesterol","1",171,6,100,30,9
+"NP_cholesterol as trait.xlsx","NP_cholesterol","5",126,6,100,30,9
+"NP_cholesterol as trait.xlsx","NP_cholesterol","10",72,6,100,30,9
+"NP_cholesterol as trait.xlsx","NP_cholesterol","13",12,6,100,30,9

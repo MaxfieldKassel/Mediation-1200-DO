@@ -75,7 +75,7 @@ stop_msg <- function(..., collapse = " ", add_time = TRUE) {
     flush(log_file)
     close(log_file)
   } else {
-    cat("Log file not set.\n")
+    warning("Log file not set.\n")
   }
 
   stop(message)
