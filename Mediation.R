@@ -11,15 +11,24 @@ library(qtl2convert)
 library(parallel)
 library(data.table)
 
-# if expression use the csv file to get the trait data
-csv_filename <- "Cyp4b1 as trait.xlsx"
-trait_name <- "ENSMUST00000102707.Cyp4b1" #Apobec3 
-chromosome <- "4"
-position <- 115 # Position in base pairs
-flanking <- 2 # Flanking region in base pairs
-minexp <- 100 # Minimum non-zero expression value for isoforms
-percent <- 30 #Percent LOD change to plot graph
-threshold <- 9 # Threshold for LOD score
+# Get command line arguments
+args <- commandArgs(trailingOnly = TRUE)
+
+# Check if the number of arguments is correct
+expected_num_args <- 8
+if (length(args) != expected_num_args) {
+  stop("Incorrect number of arguments. Expected ", expected_num_args, ", got ", length(args), ".")
+}
+
+# Assign arguments to variables
+csv_filename <- args[1]
+trait_name <- args[2]
+chromosome <- args[3]
+position <- as.numeric(args[4])
+flanking <- as.numeric(args[5])
+minexp <- as.numeric(args[6])
+percent <- as.numeric(args[7])
+threshold <- as.numeric(args[8])
 
 # Define a function to rank data
 rankz = function(x) {
@@ -37,12 +46,10 @@ data_folder <- "Data/"
 folder <- paste0(output_folder, trait_name, "_", chromosome, "_", position) # Folder to save results to
 add_timestamp <- TRUE # Set  to TRUE to add a timestamp, or FALSE to exclude it
 isoforms_filename <- paste0(data_folder, "vsd_DO_isoforms_new_app.csv")
-gp_filename <- paste0(data_folder,"Genoprobs/chromosome_")
+gp_filename <- paste0(data_folder, "Genoprobs/chromosome_")
 map_filename <- paste0(data_folder, "gigamuga_map_test_v2.RDS")
 k_filename <- paste0(data_folder, "K_1176_DietDO.rds")
 csv_filename <- paste0(input_folder, csv_filename)
-
-generate_plots <- TRUE #TODO: Remove this
 
 # Create folder and set log file
 folder <- create_folder(folder, add_timestamp)
@@ -166,12 +173,11 @@ log_msg("X_limit:", x_limit)
 log_msg("Y_limit:", y_limit)
 
 # Plot and save to PNG
-if (generate_plots) {
-  png_filename <- paste0(folder, "/", trait_name, "_alone.png")
-  png(png_filename)
-  plot_scan1(x = qtl_no_additive, xlim = x_limit, ylim = y_limit, map = map, main = "QTL for trait alone")
-  dev.off()
-}
+png_filename <- paste0(folder, "/", trait_name, "_alone.png")
+png(png_filename)
+plot_scan1(x = qtl_no_additive, xlim = x_limit, ylim = y_limit, map = map, main = "QTL for trait alone")
+dev.off()
+
 
 # --- Function to calculate LOD difference and perform original QTL analysis ---
 analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_covar, map, qtl_no_additive, initial_lod = NA) {
@@ -235,7 +241,7 @@ log_msg("Setting up cluster and exporting functions.")
 cl <- makeCluster(numCores)
 clusterExport(cl, c(
   "pheno", "gp", "K_chr", "base_covar", "interactive_covar", "rankz", "map", "find_peaks", "scan1",
-  "analyze_gene", "trait_name", "qtl_no_additive", "generate_plots", "plot_scan1", "folder", "x_limit", "y_limit",
+  "analyze_gene", "trait_name", "qtl_no_additive", "plot_scan1", "folder", "x_limit", "y_limit",
   "chromosome", "threshold", "percent", "peak_lod", "peak_lod_position", "log_msg"
 ), envir = environment())
 
@@ -272,7 +278,7 @@ new_df <- data.frame(
 )
 
 # Sort analysis_df by percent_change in descending order
-analysis_df <- analysis_df[order(-analysis_df$percent_change), ]
+analysis_df <- analysis_df[order(-analysis_df$percent_change),]
 
 # Add new_df to the top of sorted analysis_df
 analysis_df <- rbind(new_df, analysis_df)
