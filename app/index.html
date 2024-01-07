@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>CSV Task Manager</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+  <h1>CSV Task Manager</h1>
+
+  <!-- Form to Upload CSV File -->
+  <!-- Form to Upload CSV or Text File -->
+  <h2>Upload CSV or Excel File</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" id="csvfile" name="csvfile" accept=".csv, .xlsx"><br>
+    <button type="submit">Upload CSV</button>
+  </form>
+
+  <!-- Form to Add New Job -->
+  <h2>Add Job</h2>
+  <form id="addJobForm">
+    <label for="csvFileDropdown">Select CSV Filename:</label>
+    <select id="csvFileDropdown" name="csv_filename">
+      <!-- Options will be added dynamically -->
+    </select><br>
+
+    <label for="trait_name">Trait Name:</label>
+    <input type="text" id="trait_name" name="trait_name" value=""><br>
+
+    <label for="chromosome">Chromosome:</label>
+    <input type="text" id="chromosome" name="chromosome" value=""><br>
+
+    <label for="position">Position:</label>
+    <input type="text" id="position" name="position" value=""><br>
+
+    <label for="flanking">Flanking:</label>
+    <input type="text" id="flanking" name="flanking" value="2"><br>
+
+    <label for="minexp">Min Exp:</label>
+    <input type="text" id="minexp" name="minexp" value="100"><br>
+
+    <label for="percent">Percent:</label>
+    <input type="text" id="percent" name="percent" value="30"><br>
+
+    <label for="threshold">Threshold:</label>
+    <input type="text" id="threshold" name="threshold" value="9"><br>
+
+    <button type="submit">Add Job</button>
+  </form>
+
+  <!-- Display Currently Running Tasks in a Table -->
+  <h2>Currently Running Tasks</h2>
+  <table id="runningTasksTable" border="1">
+    <thead>
+      <tr>
+        <th></th>
+        <th>CSV Filename</th>
+        <th>Trait Name</th>
+        <th>Chromosome</th>
+        <th>Position</th>
+        <th>Flanking</th>
+        <th>Min Exp</th>
+        <th>Percent</th>
+        <th>Threshold</th>
+      </tr>
+    </thead>
+    <tbody id="runningTasks"></tbody>
+  </table>
+
+  <!-- Display Completed Jobs in a Table -->
+  <h2>Completed Jobs</h2>
+  <table id="completedJobsTable" border="1">
+    <thead>
+      <tr>
+        <th>CSV Filename</th>
+        <th>Trait Name</th>
+        <th>Chromosome</th>
+        <th>Position</th>
+        <th>Flanking</th>
+        <th>Min Exp</th>
+        <th>Percent</th>
+        <th>Threshold</th>
+        <th>Status</th>
+        <th>Timestamp</th>
+        <th>Duration</th>
+      </tr>
+    </thead>
+    <tbody id="completedJobs"></tbody>
+  </table>
+
+  <script>
+    $(document).ready(function() {
+      // Function to fetch and display CSV filenames
+      function fetchCSVFileNames() {
+        $.get('/get_csv_file_names', function(data) {
+          var dropdown = $('#csvFileDropdown');
+          dropdown.empty();
+          data.forEach(function(filename) {
+            dropdown.append($('<option></option>').attr('value', filename).text(filename));
+          });
+        });
+      }
+
+      // Function to Get Running Tasks and Display as a Table
+      function getRunningTasks() {
+        $.get('/jobs', function(data) {
+          var taskDisplay = $('#runningTasks');
+          taskDisplay.empty();
+          if (data.length > 0) {
+            data.forEach(function(task) {
+              var cancelBtn = '<button onclick="cancelTask(\'' + task.join(',') + '\')">Cancel</button>';
+              var taskLine = '<tr><td>' + cancelBtn + '</td>' +
+                task.map(function(item) {
+                  return '<td>' + item + '</td>';
+                }).join('') + '</tr>';
+              taskDisplay.append(taskLine);
+            });
+          } else {
+            taskDisplay.html('<tr><td colspan="9">No tasks are currently running.</td></tr>');
+          }
+        });
+      }
+
+      // Function to Get Completed Jobs and Display as a Table
+      function getCompletedJobs() {
+        $.get('/completed_jobs', function(data) {
+          var jobDisplay = $('#completedJobs');
+          jobDisplay.empty();
+          if (data.length > 0) {
+            data.forEach(function(job) {
+              var jobLine = '<tr>' +
+                job.map(function(item) {
+                  return '<td>' + item + '</td>';
+                }).join('') + '</tr>';
+              jobDisplay.append(jobLine);
+            });
+          } else {
+            jobDisplay.html('<tr><td colspan="11">No completed jobs.</td></tr>');
+          }
+        });
+      }
+
+
+      // Function to Cancel Task
+      window.cancelTask = function(jobDetails) {
+        $.post('/remove_job', JSON.stringify({
+          job: jobDetails.split(',')
+        }), {
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          success: function(response) {
+            //alert('Task cancelled');
+            getRunningTasks();
+            getCompletedJobs();
+          }
+        });
+      }
+
+      // Upload CSV File
+      $('#uploadForm').submit(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+        $.ajax({
+          url: '/upload_csv',
+          type: 'POST',
+          data: formData,
+          contentType: false,
+          processData: false,
+          success: function(response) {
+            //alert('File uploaded!');
+            fetchCSVFileNames();
+            getRunningTasks();
+            getCompletedJobs();
+          }
+        });
+      });
+
+      // Add New Job
+      $('#addJobForm').submit(function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $.post('/add', formData, function(response) {
+          //alert('Job added!');
+          getRunningTasks();
+          getCompletedJobs();
+        });
+      });
+
+      // Initial Calls
+      fetchCSVFileNames();
+      setInterval(getRunningTasks, 5000);
+      setInterval(getCompletedJobs, 5000);
+      getRunningTasks(); // Initial call
+    });
+  </script>
+</body>
+
+</html>

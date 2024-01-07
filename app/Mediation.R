@@ -217,7 +217,7 @@ analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_
   } else {
     if (!is.na(initial_lod)) {
       # Add percent change
-      peaks$percent_change <- abs(max(peaks$lod) - initial_lod) / initial_lod * 100
+      peaks$percent_change <- (initial_lod - max(peaks$lod)) / initial_lod * 100
     }
     # Add gene name
     peaks$gene <- gene

@@ -3,6 +3,10 @@ services:
   web:
     build: .
     ports:
-      - "5000:5000"
+      - "15000:5000"
     volumes:
-      - .:/app
+      - ./Data:/app/Data
+      - ./Input:/app/Input
+      - ./Output:/app/Output
+      - ./Memory:/app/Memory
+    restart: always # restart the container if it crashes or if the system reboots
