@@ -26,7 +26,7 @@ def process_file(input_file, completed_file):
         time_started = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for i in range(len(row)):
             row[i] = row[i].replace("\"", "")
-        folder_name = row[0].split('.')[1] + '_' + row[1].split('.')[1] + '_' + row[2].split('.')[1]
+        folder_name = row[1] + "_" + row[2] + "_" + row[3]
         try:
             # Run the script with parameters from the row
             run_script(row + [folder_name])
