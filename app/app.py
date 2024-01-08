@@ -1,3 +1,4 @@
+import shutil
 from quart import Quart, request, jsonify, send_file
 import asyncio
 import subprocess
@@ -88,12 +89,22 @@ async def add_row():
 @app.route('/download_folder', methods=['GET'])
 async def download_folder():
     try:
-        data = await request.form
-        folder_name = data.get('folder_name')
+        folder_name = request.args.get('folder_name')
         if folder_name is None:
             return jsonify({"message": "Folder name not found"}), 400
+
+        # Path to the folder
         folder_path = os.path.join('Output', folder_name)
-        return await send_file(folder_path + '.zip')
+
+        # Path for the zip file
+        zip_path = f"{folder_path}.zip"
+
+        # Create a zip file if it doesn't exist
+        if not os.path.exists(zip_path):
+            shutil.make_archive(folder_path, 'zip', folder_path)
+
+        # Send the zip file
+        return await send_file(zip_path, as_attachment=True)
     except Exception as e:
         logging.error(f"Error in download_folder: {e}")
         return jsonify({"message": "Error downloading folder"}), 500

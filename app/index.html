@@ -173,6 +173,12 @@
   </table>
 
   <script>
+    // Function to Download Folder
+    function downloadFolder(folderName) {
+      window.location.href = '/download_folder?folder_name=' + encodeURIComponent(folderName);
+    }
+
+
     $(document).ready(function() {
       // Function to fetch and display CSV filenames
       function fetchCSVFileNames() {
@@ -229,10 +235,6 @@
         });
       }
 
-      // Function to Download Folder
-      function downloadFolder(folderName) {
-        window.location.href = '/download_folder?folder_name=' + encodeURIComponent(folderName);
-      }
 
 
       // Function to Cancel Task
