@@ -85,6 +85,18 @@ async def add_row():
         logging.error(f"Error in add_row: {e}")
         return jsonify({"message": "Error adding job"}), 500
 
+@app.route('/download_folder', methods=['GET'])
+async def download_folder():
+    try:
+        data = await request.form
+        folder_name = data.get('folder_name')
+        if folder_name is None:
+            return jsonify({"message": "Folder name not found"}), 400
+        folder_path = os.path.join('Output', folder_name)
+        return await send_file(folder_path + '.zip')
+    except Exception as e:
+        logging.error(f"Error in download_folder: {e}")
+        return jsonify({"message": "Error downloading folder"}), 500
 
 @app.route('/jobs', methods=['GET'])
 async def get_jobs():

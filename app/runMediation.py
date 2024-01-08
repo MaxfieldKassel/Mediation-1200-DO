@@ -24,9 +24,11 @@ def process_file(input_file, completed_file):
     for row in rows[1:]:  # Skipping the header
         status = "Success"
         time_started = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = row.replace("\"", "")
+        folder_name = row[0].split('.')[1] + '_' + row[1].split('.')[1] + '_' + row[2].split('.')[1]
         try:
             # Run the script with parameters from the row
-            run_script(row)
+            run_script(row + [folder_name])
         except subprocess.CalledProcessError as e:
             print(f"An error occurred while processing row {row}: {e}")
             status = "Error"
@@ -37,7 +39,7 @@ def process_file(input_file, completed_file):
         # Log the completed run
         with open(completed_file, 'a', newline='') as comp_file:
             writer = csv.writer(comp_file)
-            writer.writerow(row + [status, time_ended, time_ran])
+            writer.writerow([folder_name] + row + [status, time_ran])
 
         # Re-read the file to get the most updated list
         with open(input_file, 'r') as file:

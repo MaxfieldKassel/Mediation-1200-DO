@@ -30,15 +30,6 @@ minexp <- as.numeric(args[6])
 percent <- as.numeric(args[7])
 
 
-csv_filename <- "GTT_glu_0_18wk as trait.xlsx"
-trait_name <- "GTT_glu_0_18wk"
-chromosome <- "X"
-position <- 132
-flanking <- 6
-minexp <- 100
-percent <- 30
-
-
 # Define a function to rank data
 rankz = function(x) {
   x = rank(x, na.last = "keep", ties.method = "average") / (sum(!is.na(x)) + 1)
@@ -61,7 +52,11 @@ k_filename <- paste0(data_folder, "K_1176_DietDO.rds")
 csv_filename <- paste0(input_folder, csv_filename)
 
 # Create folder and set log file
-folder <- create_folder(folder, add_timestamp)
+if (length(args) > expected_num_args) {
+  folder <- create_folder(args[expected_num_args + 1], add_timestamp)
+} else {
+  folder <- create_folder(folder, add_timestamp)
+}
 set_log_file(folder)
 log_msg("Folder for results created:", folder)
 log_msg("Log file set.")
