@@ -53,7 +53,7 @@ csv_filename <- paste0(input_folder, csv_filename)
 
 # Create folder and set log file
 if (length(args) > expected_num_args) {
-  folder <- create_folder(args[expected_num_args + 1], add_timestamp)
+  folder <- create_folder(paste0(input_folder, args[expected_num_args + 1]), add_timestamp)
 } else {
   folder <- create_folder(folder, add_timestamp)
 }
