@@ -3,92 +3,171 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>CSV Task Manager</title>
+  <title>Mediation Task Manager</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      color: #333;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1,
+    h2 {
+      color: #333;
+    }
+
+    form {
+      margin-bottom: 20px;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="text"],
+    select,
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 14px 20px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      text-align: left;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
 </head>
 
 <body>
-  <h1>CSV Task Manager</h1>
+  <div class="container">
+    <h1>Mediation Task Manager</h1>
 
-  <!-- Form to Upload CSV File -->
-  <!-- Form to Upload CSV or Text File -->
-  <h2>Upload CSV or Excel File</h2>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" id="csvfile" name="csvfile" accept=".csv, .xlsx"><br>
-    <button type="submit">Upload CSV</button>
-  </form>
+    <!-- Form to Upload CSV File -->
+    <h2>Upload CSV or Excel File</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" id="csvfile" name="csvfile" accept=".csv, .xlsx"><br>
+      <button type="submit">Upload CSV</button>
+    </form>
 
-  <!-- Form to Add New Job -->
-  <h2>Add Job</h2>
-  <form id="addJobForm">
-    <label for="csvFileDropdown">Select CSV Filename:</label>
-    <select id="csvFileDropdown" name="csv_filename">
-      <!-- Options will be added dynamically -->
-    </select><br>
+    <!-- Form to Add New Job -->
+    <h2>Add Job</h2>
+    <form id="addJobForm">
+      <label for="csvFileDropdown">Select CSV Filename:</label>
+      <select id="csvFileDropdown" name="csv_filename">
+        <!-- Options will be added dynamically -->
+      </select><br>
 
-    <label for="trait_name">Trait Name:</label>
-    <input type="text" id="trait_name" name="trait_name" value=""><br>
+      <label for="trait_name">Trait Name:</label>
+      <input type="text" id="trait_name" name="trait_name" value=""><br>
 
-    <label for="chromosome">Chromosome:</label>
-    <input type="text" id="chromosome" name="chromosome" value=""><br>
+      <label for="chromosome">Chromosome:</label>
+      <input type="text" id="chromosome" name="chromosome" value=""><br>
 
-    <label for="position">Position:</label>
-    <input type="text" id="position" name="position" value=""><br>
+      <label for="position">Position:</label>
+      <input type="text" id="position" name="position" value=""><br>
 
-    <label for="flanking">Flanking:</label>
-    <input type="text" id="flanking" name="flanking" value="2"><br>
+      <label for="flanking">Flanking:</label>
+      <input type="text" id="flanking" name="flanking" value="2"><br>
 
-    <label for="minexp">Min Exp:</label>
-    <input type="text" id="minexp" name="minexp" value="100"><br>
+      <label for="minexp">Min Exp:</label>
+      <input type="text" id="minexp" name="minexp" value="100"><br>
 
-    <label for="percent">Percent:</label>
-    <input type="text" id="percent" name="percent" value="30"><br>
+      <label for="percent">Percent:</label>
+      <input type="text" id="percent" name="percent" value="30"><br>
 
-    <label for="threshold">Threshold:</label>
-    <input type="text" id="threshold" name="threshold" value="9"><br>
+      <label for="threshold">Threshold:</label>
+      <input type="text" id="threshold" name="threshold" value="9"><br>
 
-    <button type="submit">Add Job</button>
-  </form>
+      <button type="submit">Add Job</button>
+    </form>
+  </div>
+    <!-- Display Currently Running Tasks in a Table -->
+    <h2>Currently Running Tasks</h2>
+    <table id="runningTasksTable" border="1">
+      <thead>
+        <tr>
+          <th></th>
+          <th>CSV Filename</th>
+          <th>Trait Name</th>
+          <th>Chromosome</th>
+          <th>Position</th>
+          <th>Flanking</th>
+          <th>Min Exp</th>
+          <th>Percent</th>
+          <th>Threshold</th>
+        </tr>
+      </thead>
+      <tbody id="runningTasks"></tbody>
+    </table>
 
-  <!-- Display Currently Running Tasks in a Table -->
-  <h2>Currently Running Tasks</h2>
-  <table id="runningTasksTable" border="1">
-    <thead>
-      <tr>
-        <th></th>
-        <th>CSV Filename</th>
-        <th>Trait Name</th>
-        <th>Chromosome</th>
-        <th>Position</th>
-        <th>Flanking</th>
-        <th>Min Exp</th>
-        <th>Percent</th>
-        <th>Threshold</th>
-      </tr>
-    </thead>
-    <tbody id="runningTasks"></tbody>
-  </table>
-
-  <!-- Display Completed Jobs in a Table -->
-  <h2>Completed Jobs</h2>
-  <table id="completedJobsTable" border="1">
-    <thead>
-      <tr>
-        <th>CSV Filename</th>
-        <th>Trait Name</th>
-        <th>Chromosome</th>
-        <th>Position</th>
-        <th>Flanking</th>
-        <th>Min Exp</th>
-        <th>Percent</th>
-        <th>Threshold</th>
-        <th>Status</th>
-        <th>Timestamp</th>
-        <th>Duration</th>
-      </tr>
-    </thead>
-    <tbody id="completedJobs"></tbody>
-  </table>
+    <!-- Display Completed Jobs in a Table -->
+    <h2>Completed Jobs</h2>
+    <table id="completedJobsTable" border="1">
+      <thead>
+        <tr>
+          <th>CSV Filename</th>
+          <th>Trait Name</th>
+          <th>Chromosome</th>
+          <th>Position</th>
+          <th>Flanking</th>
+          <th>Min Exp</th>
+          <th>Percent</th>
+          <th>Threshold</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+          <th>Duration</th>
+        </tr>
+      </thead>
+      <tbody id="completedJobs"></tbody>
+    </table>
 
   <script>
     $(document).ready(function() {

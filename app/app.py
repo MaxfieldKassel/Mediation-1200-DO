@@ -20,7 +20,7 @@ async def run_script():
     logging.info("Starting script...")
     try:
         script_process = await asyncio.create_subprocess_exec(
-            'python3', 'runMedation.py',
+            'python3', 'runMediation.py',
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             cwd=os.getcwd()
         )
@@ -90,6 +90,7 @@ async def get_jobs():
         lines = await file.readlines()
     jobs = [line.rstrip().split(",") for line in lines[1:]]
     return jsonify(jobs)
+
 
 @app.route('/completed_jobs', methods=['GET'])
 async def get_completed_jobs():

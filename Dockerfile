@@ -4,8 +4,10 @@ FROM python:3.8
 # Install R
 RUN apt-get update && apt-get install -y r-base
 
-# Set the working directory
+# Create a new user and switch to it
+RUN useradd -m appuser
 WORKDIR /app
+RUN chown appuser:appuser /app
 
 # Copy the Python requirements file and install Python dependencies
 COPY requirements.txt /app/
@@ -19,7 +21,10 @@ RUN R -e "install.packages('parallel', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('readxl', repos='http://cran.rstudio.com/')"
 
 # Copy the rest of the application's code
-COPY ./app /app
+COPY --chown=appuser:appuser ./app /app
+
+# Switch to non-root user
+USER appuser
 
 # Command to run the application
 CMD ["hypercorn", "app:app", "--bind", "0.0.0.0:5000"]

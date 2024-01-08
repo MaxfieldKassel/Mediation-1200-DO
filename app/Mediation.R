@@ -110,7 +110,7 @@ log_msg("All data loaded.")
 # --- Get Gene Names ---
 #get it from the isoforms header - the first x columns are not genes after the trait
 trait_index <- which(colnames(pheno) == trait_name)
-gene_names <- colnames(pheno)[(trait_index + 1):15] #colnames(pheno)[(trait_index + 1):ncol(pheno)]
+gene_names <- colnames(pheno)[(trait_index + 1):ncol(pheno)]
 log_msg("Gene names extracted.")
 
 # --- Make a kinship matrix and subset for the specified chromosome ---
