@@ -73,6 +73,8 @@ async def add_row():
                     return jsonify({"message": "Job already exists"}), 400
 
         async with aio_open(csv_filename, 'a') as file:
+            if lines[-1][-1] != '\n':
+                await file.write('\n')
             await file.write(','.join(job) + '\n')
 
         if script_process is None:
