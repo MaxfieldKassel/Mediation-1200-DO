@@ -212,16 +212,26 @@
           jobDisplay.empty();
           if (data.length > 0) {
             data.forEach(function(job) {
-              var jobLine = '<tr>' +
-                job.map(function(item) {
-                  return '<td>' + item + '</td>';
-                }).join('') + '</tr>';
+              var jobLine = '<tr>';
+              job.forEach(function(item, index) {
+                if (index === 0) { // Assuming the first item is the folder name
+                  jobLine += '<td><a href="#" onclick="downloadFolder(\'' + item + '\')">' + item + '</a></td>';
+                } else {
+                  jobLine += '<td>' + item + '</td>';
+                }
+              });
+              jobLine += '</tr>';
               jobDisplay.append(jobLine);
             });
           } else {
             jobDisplay.html('<tr><td colspan="11">No completed jobs.</td></tr>');
           }
         });
+      }
+
+      // Function to Download Folder
+      function downloadFolder(folderName) {
+        window.location.href = '/download_folder?folder_name=' + encodeURIComponent(folderName);
       }
 
 
