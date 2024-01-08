@@ -184,7 +184,7 @@ analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_
 
   if (!is.na(initial_lod)) {
     # Add percent change
-    percent_drop <- (initial_lod - max(peaks$lod)) / initial_lod * 100
+    percent_drop <- (initial_lod - max(peak_lod)) / initial_lod * 100
   } else {
     # Set percent change to -100 if initial_lod is NA
     percent_drop <- -100
