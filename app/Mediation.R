@@ -16,7 +16,7 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # Check if the number of arguments is correct
 expected_num_args <- 7
-if (length(args) != expected_num_args) {
+if (length(args) < expected_num_args) {
   stop("Incorrect number of arguments. Expected ", expected_num_args, ", got ", length(args), ".")
 }
 

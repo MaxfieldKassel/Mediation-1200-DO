@@ -24,9 +24,7 @@ def process_file(input_file, completed_file):
     for row in rows[1:]:  # Skipping the header
         status = "Success"
         time_started = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        for i in range(len(row)):
-            row[i] = row[i].replace("\"", "")
-        folder_name = row[1] + "_" + row[2] + "_" + row[3]
+        folder_name = row[1].replace("\"","") + "_" + row[2].replace("\"","") + "_" + row[3].replace("\"","")
         try:
             # Run the script with parameters from the row
             run_script(row + [folder_name])
