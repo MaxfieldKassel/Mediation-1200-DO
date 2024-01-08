@@ -256,7 +256,7 @@ new_df <- data.frame(
 )
 
 # Sort analysis_df by percent_change in descending order
-analysis_df <- analysis_df[order(-analysis_df$percent_change),]
+analysis_df <- analysis_df[order(-analysis_df$percent_drop),]
 
 # Add new_df to the top of sorted analysis_df
 analysis_df <- rbind(new_df, analysis_df)
