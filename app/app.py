@@ -63,7 +63,7 @@ async def add_row():
     global script_process
     try:
         data = await request.form
-        job = [data[field] for field in ['csv_filename', 'trait_name', 'chromosome', 'position', 'flanking', 'minexp', 'percent', 'threshold']]
+        job = [data[field] for field in ['csv_filename', 'trait_name', 'chromosome', 'position', 'flanking', 'minexp', 'percent']]
         logging.debug(f"Job to add: {job}")
 
         async with aio_open(csv_filename, 'r') as file:
@@ -133,6 +133,23 @@ async def remove_job():
 @app.route('/is_script_running', methods=['GET'])
 async def is_script_running():
     return jsonify({"script_running": script_process is not None})
+
+@app.route('/start_script', methods=['GET'])
+async def start_script():
+    global script_process
+    if script_process is None:
+        asyncio.create_task(run_script())
+        return jsonify({"message": "Script started successfully"}), 200
+    return jsonify({"message": "Script already running"}), 400
+
+@app.route('/stop_script', methods=['GET'])
+async def stop_script():
+    global script_process
+    if script_process is not None:
+        script_process.terminate()
+        script_process = None
+        return jsonify({"message": "Script stopped successfully"}), 200
+    return jsonify({"message": "Script not running"}), 400
 
 if __name__ == '__main__':
     app.run()

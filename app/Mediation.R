@@ -15,7 +15,7 @@ library(data.table)
 args <- commandArgs(trailingOnly = TRUE)
 
 # Check if the number of arguments is correct
-expected_num_args <- 8
+expected_num_args <- 7
 if (length(args) != expected_num_args) {
   stop("Incorrect number of arguments. Expected ", expected_num_args, ", got ", length(args), ".")
 }
@@ -28,7 +28,16 @@ position <- as.numeric(args[4])
 flanking <- as.numeric(args[5])
 minexp <- as.numeric(args[6])
 percent <- as.numeric(args[7])
-threshold <- as.numeric(args[8])
+
+
+csv_filename <- "GTT_glu_0_18wk as trait.xlsx"
+trait_name <- "GTT_glu_0_18wk"
+chromosome <- "X"
+position <- 132
+flanking <- 6
+minexp <- 100
+percent <- 30
+
 
 # Define a function to rank data
 rankz = function(x) {
@@ -60,12 +69,9 @@ log_msg("File name:", csv_filename)
 log_msg("Trait name:", trait_name)
 log_msg("Chromosome:", chromosome)
 log_msg("Position:", position, "mbp")
-position <- position * 1000000 # Convert to base pairs
 log_msg("Flanking region:", flanking, "mbp")
-flanking <- flanking * 1000000 # Convert to base pairs
 log_msg("Minimum expression value:", minexp)
 log_msg("Percent LOD change:", percent)
-log_msg("Threshold:", threshold)
 log_msg("Number of cores:", numCores)
 
 log_msg("Loading CSV file...")
@@ -82,7 +88,7 @@ csv <- remove_unused_columns(csv, trait_name)
 # Load isoform data
 isoforms <- load_csv(isoforms_filename)
 # Filter isoforms based on chromosome, position, and minexp
-isoforms <- filter_isoforms(isoforms, chromosome, position, flanking, minexp)
+isoforms <- filter_isoforms(isoforms, chromosome, position * 1e6, flanking * 1e6, minexp)
 # Format isoforms for merging
 isoforms <- format_isoforms(isoforms)
 # Merge isoforms with CSV file
@@ -94,8 +100,6 @@ write.csv(isoforms, file.path(folder, paste0(trait_name, "_isoforms.csv")), row.
 # --- Load Data ---
 log_msg("Loading genoprobs...", paste0(gp_filename, chromosome, ".rds"))
 gp <- readRDS(paste0(gp_filename, chromosome, ".rds"))
-#gp <- readRDS("Data/final_genoprobs_1176.rds")[,chromosome]
-#test2 <- readRDS("Data/final_genoprobs_1176.rds")
 log_msg("Loading map...")
 map <- readRDS(map_filename)
 log_msg("Loading kinship matrix...")
@@ -139,26 +143,10 @@ log_msg("QTL scan for trait alone completed.")
 qtl_no_additive[qtl_no_additive == 0] <- 1e-6 # Avoid division by zero
 log_msg("LOD profile for trait without a transcript as an additive covar completed.")
 
-peaks <- find_peaks(scan1_output = qtl_no_additive, map = map, threshold = threshold)
-log_msg("Peaks found.")
-
-#Check to make sure there is only one peak
-if (nrow(peaks) > 1) {
-  log_msg("There are multiple peaks, choosing the highest one within 2 Mb of the original peak.")
-  # Find the highest peak within 2 Mb of the original peak
-  peak_position <- peaks$pos[which.min(abs(peaks$pos - position))]
-  peaks <- peaks[peaks$pos == peak_position,]
-  log_msg("Peak position:", peak_position)
-} else if (nrow(peaks) == 0) {
-  stop_msg("There are no peaks.")
-} else {
-  log_msg("There is only one peak.")
-}
-
-#Get the peak position
-peak_lod_position <- peaks$pos
-# Get the highest LOD score
-peak_lod <- peaks$lod
+positions <- map[[chromosome]]
+# Find peak LOD score and position within the flanking region
+peak_lod <- max(qtl_no_additive[which(positions >= (position - flanking) & positions <= (position + flanking))])
+peak_lod_position <- positions[which(qtl_no_additive == peak_lod)]
 
 log_msg("Peak position:", peak_lod_position)
 log_msg("Peak LOD score:", peak_lod)
@@ -189,49 +177,38 @@ analyze_gene <- function(gene, genoprobs, pheno, K_chr, base_covar, interactive_
   addcovar_with_gene <- model.matrix(~Sex * Diet + GenLit + pheno[[paste0("rankz.", gene)]], data = pheno)[, -1]
   qtl_with_additive <- scan1(genoprobs = genoprobs, pheno = pheno[, trait_name, drop = FALSE], kinship = K_chr, addcovar = addcovar_with_gene, intcovar = interactive_covar, cores = 0)
 
-  peaks <- find_peaks(scan1_output = qtl_with_additive, map = map, sort = "lod")
+  # Find peak LOD score and peak_lod_position within the flanking region
+  peak_lod <- max(qtl_with_additive[which(positions >= (peak_lod_position - flanking) & positions <= (peak_lod_position + flanking))])
+  peak_lod_position <- positions[which(qtl_with_additive == peak_lod)]
 
-  # Check if there are any peaks
-  if (nrow(peaks) > 1) {
-    warning(paste("There are multiple peaks for gene", gene, "choosing the highest one within 2 Mb of the original peak."))
-    # Find the highest peak within 2 Mb of the original peak
-    peak_position <- peaks$pos[which(abs(peaks$pos - peak_lod_position) <= 2000000)]
-    peaks <- peaks[peaks$pos == peak_position,]
-    if (nrow(peaks) > 1) {
-      warning(paste("There are still multiple peaks for gene", gene, "choosing the highest one."))
-      peaks <- peaks[peaks$lod == max(peaks$lod),]
-    }
-  }
 
-  if (nrow(peaks) == 0) {
-    warning(paste("There are no peaks for gene", gene))
-    peaks <- data.frame(
-      lodindex = 1,
-      lodcolumn = trait_name,
-      chr = chromosome,
-      pos = -1,
-      lod = -1,
-      gene = gene,
-      percent_change = -1
-    )
+  if (!is.na(initial_lod)) {
+    # Add percent change
+    percent_drop <- (initial_lod - max(peaks$lod)) / initial_lod * 100
   } else {
-    if (!is.na(initial_lod)) {
-      # Add percent change
-      peaks$percent_change <- (initial_lod - max(peaks$lod)) / initial_lod * 100
-    }
-    # Add gene name
-    peaks$gene <- gene
+    # Set percent change to -100 if initial_lod is NA
+    percent_drop <- -100
   }
 
+  # create a dataframe with the results, split gene into 2 columns, transcript and gene symbol by the first period
+  peaks <- data.frame(
+    transcript = sapply(strsplit(gene, "\\."), function(x) ifelse(length(x) > 0, x[1], NA)),
+    gene_symbol = sapply(strsplit(gene, "\\."), function(x) ifelse(length(x) > 1, x[2], NA)),
+    trait = trait_name,
+    chromosome = chromosome,
+    position = peak_lod_position,
+    lod = peak_lod,
+    percent_drop = percent_drop
+  )
 
   # Plot and save to PNG if the LOD score has changed by more than the specified percent
-  if (!is.null(initial_lod) && (nrow(peaks) == 0 || peaks$percent_change > percent)) {
+  if (!is.null(initial_lod) && percent_drop > percent) {
     png_filename <- paste0(folder, "/", gene, ".png")
     png(png_filename)
     plot_scan1(x = qtl_with_additive, xlim = x_limit, ylim = y_limit, map = map, main = paste("QTL Scan for ", trait_name, " + ", gene))
     dev.off()
   }
-  log_msg("Gene analysis completed:", gene)
+
   # Return peaks
   return(peaks)
 }
@@ -242,7 +219,7 @@ cl <- makeCluster(numCores)
 clusterExport(cl, c(
   "pheno", "gp", "K_chr", "base_covar", "interactive_covar", "rankz", "map", "find_peaks", "scan1",
   "analyze_gene", "trait_name", "qtl_no_additive", "plot_scan1", "folder", "x_limit", "y_limit",
-  "chromosome", "threshold", "percent", "peak_lod", "peak_lod_position", "log_msg"
+  "chromosome", "percent", "peak_lod", "peak_lod_position", "log_msg", "flanking", "positions"
 ), envir = environment())
 
 log_msg("Cluster set up and functions exported. ")
@@ -261,20 +238,21 @@ log_msg(" Cluster closed. ")
 analysis_df <- do.call(rbind, analysis_results)
 log_msg(" Results aggregated. ")
 
-# --- Remove first column if it is not lodindex ---
-if (names(analysis_df)[1] != "lodindex") {
+# --- Remove first column if it is not transcript ---
+if (names(analysis_df)[1] != "transcript") {
+  log_msg("Removing first column: ", names(analysis_df)[1])
   analysis_df <- analysis_df[, -1]
 }
 
 # --- Add initial LOD score to analysis_results at the top ---
 new_df <- data.frame(
-  lodindex = 1,
-  lodcolumn = trait_name,
-  chr = chromosome,
-  pos = peak_lod_position,
+  transcript = "",
+  gene_symbol = "",
+  trait = trait_name,
+  chromosome = chromosome,
+  position = peak_lod_position,
   lod = peak_lod,
-  gene = "",
-  percent_change = 0
+  percent_drop = ""
 )
 
 # Sort analysis_df by percent_change in descending order
@@ -282,21 +260,6 @@ analysis_df <- analysis_df[order(-analysis_df$percent_change),]
 
 # Add new_df to the top of sorted analysis_df
 analysis_df <- rbind(new_df, analysis_df)
-
-#Split gene into 2 columns, transcript and gene symbol by the first period
-split_gene <- strsplit(as.character(analysis_df$gene), "\\.")
-
-# Extracting the first part (transcript)
-analysis_df$transcript <- sapply(split_gene, function(x) ifelse(length(x) > 0, x[1], NA))
-
-# Extracting the second part (gene symbol) and handling rows without ' . '
-analysis_df$gene_symbol <- sapply(split_gene, function(x) ifelse(length(x) > 1, x[2], NA))
-
-# Remove gene column
-analysis_df$gene <- NULL
-
-#move the transcript and gene symbol to the front
-analysis_df <- analysis_df[, c("transcript", "gene_symbol", "lodindex", "lodcolumn", "chr", "pos", "lod", "percent_change")]
 
 # --- Remove max_diff and max_diff_loc from analysis_results  before saving ---
 write.csv(analysis_df, file.path(folder, paste0(trait_name, "_analysis_results.csv")), row.names = FALSE)

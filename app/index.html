@@ -123,12 +123,17 @@
       <label for="percent">Percent:</label>
       <input type="text" id="percent" name="percent" value="30"><br>
 
-      <label for="threshold">Threshold:</label>
-      <input type="text" id="threshold" name="threshold" value="9"><br>
-
       <button type="submit">Add Job</button>
     </form>
   </div>
+
+  <div class="script-control">
+    <h2>Script Control</h2>
+    <button id="startScriptBtn" style="display: none; width: 100px;">Start Script</button>
+    <button id="stopScriptBtn" style="display: none; width: 100px;">Stop Script</button>
+    <h3 id="scriptStatus">Checking script status...</h3>
+  </div>
+
   <!-- Display Currently Running Tasks in a Table -->
   <h2>Currently Running Tasks</h2>
   <table id="runningTasksTable" border="1">
@@ -142,7 +147,6 @@
         <th>Flanking</th>
         <th>Min Exp</th>
         <th>Percent</th>
-        <th>Threshold</th>
       </tr>
     </thead>
     <tbody id="runningTasks"></tbody>
@@ -160,7 +164,6 @@
         <th>Flanking</th>
         <th>Min Exp</th>
         <th>Percent</th>
-        <th>Threshold</th>
         <th>Status</th>
         <th>Timestamp</th>
         <th>Duration</th>
@@ -267,10 +270,41 @@
         });
       });
 
+      function checkScriptStatus() {
+        $.get('/is_script_running', function(response) {
+          const scriptRunning = response.script_running;
+          $('#scriptStatus').text(scriptRunning ? 'Script is running' : 'Script is not running');
+          if (scriptRunning) {
+            $('#startScriptBtn').hide();
+            $('#stopScriptBtn').show();
+          } else {
+            $('#startScriptBtn').show();
+            $('#stopScriptBtn').hide();
+          }
+        });
+      }
+
+      // Start Script Function
+      $('#startScriptBtn').click(function() {
+        $.get('/start_script', function(response) {
+          checkScriptStatus();
+        });
+      });
+
+      // Stop Script Function
+      $('#stopScriptBtn').click(function() {
+        $.get('/stop_script', function(response) {
+          checkScriptStatus();
+        });
+      });
+
+
       // Initial Calls
       fetchCSVFileNames();
       setInterval(getRunningTasks, 5000);
       setInterval(getCompletedJobs, 5000);
+      setInterval(checkScriptStatus, 5000);
+      checkScriptStatus(); // Initial call
       getRunningTasks(); // Initial call
       getCompletedJobs(); // Initial call
     });
