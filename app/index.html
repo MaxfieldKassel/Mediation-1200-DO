@@ -129,45 +129,45 @@
       <button type="submit">Add Job</button>
     </form>
   </div>
-    <!-- Display Currently Running Tasks in a Table -->
-    <h2>Currently Running Tasks</h2>
-    <table id="runningTasksTable" border="1">
-      <thead>
-        <tr>
-          <th></th>
-          <th>CSV Filename</th>
-          <th>Trait Name</th>
-          <th>Chromosome</th>
-          <th>Position</th>
-          <th>Flanking</th>
-          <th>Min Exp</th>
-          <th>Percent</th>
-          <th>Threshold</th>
-        </tr>
-      </thead>
-      <tbody id="runningTasks"></tbody>
-    </table>
+  <!-- Display Currently Running Tasks in a Table -->
+  <h2>Currently Running Tasks</h2>
+  <table id="runningTasksTable" border="1">
+    <thead>
+      <tr>
+        <th></th>
+        <th>CSV Filename</th>
+        <th>Trait Name</th>
+        <th>Chromosome</th>
+        <th>Position</th>
+        <th>Flanking</th>
+        <th>Min Exp</th>
+        <th>Percent</th>
+        <th>Threshold</th>
+      </tr>
+    </thead>
+    <tbody id="runningTasks"></tbody>
+  </table>
 
-    <!-- Display Completed Jobs in a Table -->
-    <h2>Completed Jobs</h2>
-    <table id="completedJobsTable" border="1">
-      <thead>
-        <tr>
-          <th>CSV Filename</th>
-          <th>Trait Name</th>
-          <th>Chromosome</th>
-          <th>Position</th>
-          <th>Flanking</th>
-          <th>Min Exp</th>
-          <th>Percent</th>
-          <th>Threshold</th>
-          <th>Status</th>
-          <th>Timestamp</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody id="completedJobs"></tbody>
-    </table>
+  <!-- Display Completed Jobs in a Table -->
+  <h2>Completed Jobs</h2>
+  <table id="completedJobsTable" border="1">
+    <thead>
+      <tr>
+        <th>CSV Filename</th>
+        <th>Trait Name</th>
+        <th>Chromosome</th>
+        <th>Position</th>
+        <th>Flanking</th>
+        <th>Min Exp</th>
+        <th>Percent</th>
+        <th>Threshold</th>
+        <th>Status</th>
+        <th>Timestamp</th>
+        <th>Duration</th>
+      </tr>
+    </thead>
+    <tbody id="completedJobs"></tbody>
+  </table>
 
   <script>
     $(document).ready(function() {
@@ -272,6 +272,7 @@
       setInterval(getRunningTasks, 5000);
       setInterval(getCompletedJobs, 5000);
       getRunningTasks(); // Initial call
+      getCompletedJobs(); // Initial call
     });
   </script>
 </body>
