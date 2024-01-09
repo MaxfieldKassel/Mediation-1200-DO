@@ -6,6 +6,7 @@ import os
 import json
 from aiofiles import open as aio_open
 import logging
+import sys
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
@@ -154,6 +155,54 @@ async def remove_job():
 
     return jsonify({"message": "Job removed successfully"}), 200
 
+
+@app.route('/download_all_folders', methods=['GET'])
+async def download_all_folders():
+    try:
+        output_dir = 'Output'
+
+        print(os.listdir(output_dir))
+        sys.stdout.flush()
+        # Remove existing .zip files in the Output directory
+        for item in os.listdir(output_dir):
+            if item.endswith('.zip'):
+                os.remove(os.path.join(output_dir, item))
+
+        # Path for the final zip file
+        final_zip_path = 'all_jobs.zip'
+
+        # Create a zip file containing all the contents of the Output folder
+        shutil.make_archive(os.path.splitext(final_zip_path)[0], 'zip', output_dir)
+
+        return await send_file(final_zip_path, as_attachment=True)
+    except Exception as e:
+        logging.error(f"Error in download_all_folders: {e}")
+        return jsonify({"message": "Error downloading all folders"}), 500
+    
+
+@app.route('/clear_all_jobs', methods=['GET'])
+async def clear_all_jobs():
+    try:
+        # Remove all .zip files and folders in the Output directory
+        for item in os.listdir('Output'):
+            item_path = os.path.join('Output', item)
+            if item.endswith('.zip') or os.path.isdir(item_path):
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                else:
+                    os.remove(item_path)
+
+        # Preserve the first line of the completed jobs file
+        async with aio_open(completed_filename, 'r') as file:
+            first_line = await file.readline()
+
+        async with aio_open(completed_filename, 'w') as file:
+            await file.write(first_line)
+
+        return jsonify({"message": "All completed jobs cleared"}), 200
+    except Exception as e:
+        logging.error(f"Error in clear_all_jobs: {e}")
+        return jsonify({"message": "Error clearing jobs"}), 500
 
 @app.route('/is_script_running', methods=['GET'])
 async def is_script_running():

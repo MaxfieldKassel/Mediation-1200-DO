@@ -47,7 +47,7 @@
     }
 
     button {
-      width: 100%;
+      width: auto;
       background-color: #4CAF50;
       color: white;
       padding: 14px 20px;
@@ -153,7 +153,15 @@
   </table>
 
   <!-- Display Completed Jobs in a Table -->
-  <h2>Completed Jobs</h2>
+<div style="text-align: center; margin-bottom: 10px;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <button id="downloadAllBtn" style="margin-left: auto; padding: 5px 10px;">Download All</button>
+    <h2 style="margin: 10px;">Completed Jobs</h2>
+    <button id="clearAllBtn" style="margin-right: auto; padding: 5px 10px;">Clear All</button>
+  </div>
+</div>
+
+
   <table id="completedJobsTable" border="1">
     <thead>
       <tr>
@@ -308,6 +316,22 @@
         $.get('/stop_script', function(response) {
           checkScriptStatus();
         });
+      });
+
+      // Function to handle Download All button click
+      $('#downloadAllBtn').click(function() {
+        // Logic to handle downloading all completed jobs
+        window.location.href = '/download_all_folders';
+      });
+
+      // Function to handle Clear All button click
+      $('#clearAllBtn').click(function() {
+        if (confirm('Are you sure you want to clear all completed jobs?')) {
+          $.get('/clear_all_jobs', function(response) {
+            alert(response.message);
+            getCompletedJobs();
+          });
+        }
       });
 
 
